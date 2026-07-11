@@ -6,6 +6,20 @@
 
 Gitea 是一个用 Go 语言编写的自托管 Git 服务，前端使用 JavaScript/Vue.js。代码采用分层架构：模型层（models）→ 服务层（services）→ 路由层（routers）。
 
+## ⚠️ 修改前必读文档
+
+**在修改任何模块代码之前，请先阅读对应的规范文档：**
+
+| 修改模块 | 必读文档 | 文档路径 |
+|----------|----------|----------|
+| **整体架构** / 跨模块修改 | Gitea 架构设计文档 | `.claude/rules/arch.md` |
+| **modules/** 目录 | modules 目录代码规范 | `.claude/rules/model.md` |
+| **routers/** 目录 | routers 目录代码规范 | `.claude/rules/router.md` |
+| **services/** 目录 | services 目录代码规范 | `.claude/rules/service.md` |
+| **代码质量** / Lint / 测试 | 代码质量保证体系 | `.claude/rules/quality-gate.md` |
+
+这些文档包含了各模块的代码规范、命名约定、错误处理模式、导入别名规则等关键信息，遵循这些规范能确保代码一致性和可维护性。
+
 ## 核心目录
 
 - **cmd/** - CLI 命令实现（admin, doctor, dump 等）
