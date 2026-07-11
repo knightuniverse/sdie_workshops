@@ -22,4 +22,4 @@
 - **模型层**: `models/repo/release.go` - 添加 `Keyword` 字段到 `FindReleasesOptions`，在 `ToConds()` 中添加 LIKE 查询
 - **路由层**: `routers/web/repo/release.go` - 在 `TagsList` 中读取 `q` 参数并传递给查询
 - **模板层**: `templates/repo/tag/list.tmpl` - 添加搜索表单（使用 `shared/search/combo`）
-- **国际化**: 可能需要添加 `search.tag_kind` 翻译
+- **国际化**: 在 `locale_en-US.ini` 和 `locale_zh-CN.ini` 中添加 `search.tag_kind` 翻译
