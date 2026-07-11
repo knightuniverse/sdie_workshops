@@ -121,6 +121,48 @@ func TestCreateNewTagProtected(t *testing.T) {
 	}
 }
 
+func TestTagsSearch(t *testing.T) {
+	defer tests.PrepareTestEnv(t)()
+
+	repo := unittest.AssertExistsAndLoadBean(t, &repo_model.Repository{ID: 1})
+	session := loginUser(t, repo.MustOwnerName())
+
+	// Tags page without search returns 200
+	req := NewRequest(t, "GET", fmt.Sprintf("/%s/tags", repo.FullName()))
+	resp := MakeRequest(t, req, http.StatusOK)
+	htmlDoc := NewHTMLParser(t, resp.Body)
+
+	// Search form should be present
+	searchInput := htmlDoc.doc.Find("input[name='q']")
+	assert.True(t, searchInput.Length() > 0, "search input should be present")
+
+	// Search with a keyword that matches
+	req = NewRequest(t, "GET", fmt.Sprintf("/%s/tags?q=v1.1", repo.FullName()))
+	resp = session.MakeRequest(t, req, http.StatusOK)
+	htmlDoc = NewHTMLParser(t, resp.Body)
+
+	// Search input should retain the keyword
+	searchInput = htmlDoc.doc.Find("input[name='q']")
+	val, exists := searchInput.Attr("value")
+	assert.True(t, exists, "search input should have a value")
+	assert.Equal(t, "v1.1", val)
+
+	// Search with a keyword that matches nothing
+	req = NewRequest(t, "GET", fmt.Sprintf("/%s/tags?q=nonexistent-tag-xyz", repo.FullName()))
+	resp = session.MakeRequest(t, req, http.StatusOK)
+	htmlDoc = NewHTMLParser(t, resp.Body)
+
+	// Search input should still retain the keyword
+	searchInput = htmlDoc.doc.Find("input[name='q']")
+	val, exists = searchInput.Attr("value")
+	assert.True(t, exists, "search input should have a value even with no results")
+	assert.Equal(t, "nonexistent-tag-xyz", val)
+
+	// Tags table should not be present when no results
+	tagsTable := htmlDoc.doc.Find("#tags-table")
+	assert.Equal(t, 0, tagsTable.Length(), "tags table should not be present when no results")
+}
+
 func TestRepushTag(t *testing.T) {
 	onGiteaRun(t, func(t *testing.T, u *url.URL) {
 		repo := unittest.AssertExistsAndLoadBean(t, &repo_model.Repository{ID: 1})

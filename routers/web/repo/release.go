@@ -212,6 +212,11 @@ func TagsList(ctx *context.Context) {
 	ctx.Data["HideBranchesInDropdown"] = true
 	ctx.Data["CanCreateRelease"] = ctx.Repo.CanWrite(unit.TypeReleases) && !ctx.Repo.Repository.IsArchived
 
+	keyword := ctx.FormTrim("q")
+	if len([]rune(keyword)) > 255 {
+		keyword = string([]rune(keyword)[:255])
+	}
+
 	listOptions := db.ListOptions{
 		Page:     ctx.FormInt("page"),
 		PageSize: ctx.FormInt("limit"),
@@ -231,6 +236,7 @@ func TagsList(ctx *context.Context) {
 		IncludeTags:   true,
 		HasSha1:       optional.Some(true),
 		RepoID:        ctx.Repo.Repository.ID,
+		Keyword:       keyword,
 	}
 
 	releases, err := db.Find[repo_model.Release](ctx, opts)
@@ -240,8 +246,14 @@ func TagsList(ctx *context.Context) {
 	}
 
 	ctx.Data["Releases"] = releases
+	ctx.Data["Keyword"] = keyword
 
-	numTags := ctx.Data["NumTags"].(int64)
+	numTags, err := db.Count[repo_model.Release](ctx, opts)
+	if err != nil {
+		ctx.ServerError("CountReleases", err)
+		return
+	}
+
 	pager := context.NewPagination(int(numTags), opts.PageSize, opts.Page, 5)
 	pager.SetDefaultParams(ctx)
 	ctx.Data["Page"] = pager

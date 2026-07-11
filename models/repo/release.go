@@ -235,6 +235,7 @@ type FindReleasesOptions struct {
 	IsDraft       optional.Option[bool]
 	TagNames      []string
 	HasSha1       optional.Option[bool] // useful to find draft releases which are created with existing tags
+	Keyword       string               // search by tag name (case-insensitive)
 }
 
 func (opts FindReleasesOptions) ToConds() builder.Cond {
@@ -261,6 +262,10 @@ func (opts FindReleasesOptions) ToConds() builder.Cond {
 		} else {
 			cond = cond.And(builder.Eq{"sha1": ""})
 		}
+	}
+	if opts.Keyword != "" {
+		escapedKeyword := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(opts.Keyword, "!", "!!"), "%", "!%"), "_", "!_")
+		cond = cond.And(builder.Expr("lower_tag_name LIKE ? ESCAPE '!'", "%"+strings.ToLower(escapedKeyword)+"%"))
 	}
 	return cond
 }
