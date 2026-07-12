@@ -111,11 +111,11 @@ type StatusInfo struct {
 	DisplayedStatus string
 }
 
-// GetStatusInfoList returns a slice of StatusInfo
+// GetStatusInfoList returns a slice of StatusInfo for UI filter options.
+// The order reflects display preference, not aggregation priority.
 func GetStatusInfoList(ctx context.Context) []StatusInfo {
-	// same as those in aggregateJobStatus
-	allStatus := []Status{StatusSuccess, StatusFailure, StatusWaiting, StatusRunning}
-	statusInfoList := make([]StatusInfo, 0, 4)
+	allStatus := []Status{StatusSuccess, StatusFailure, StatusCancelled, StatusSkipped, StatusWaiting, StatusRunning, StatusBlocked}
+	statusInfoList := make([]StatusInfo, 0, len(allStatus))
 	for _, s := range allStatus {
 		statusInfoList = append(statusInfoList, StatusInfo{
 			Status:          int(s),

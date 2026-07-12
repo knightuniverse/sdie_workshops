@@ -152,10 +152,29 @@ func UpdateRunJob(ctx context.Context, job *ActionRunJob, cond builder.Cond, col
 	return affected, nil
 }
 
+// aggregateJobStatus aggregates the statuses of all jobs into a single run-level status.
+//
+// Evaluation order:
+//  1. Empty list guard: return StatusRunning
+//  2. Terminal state (all jobs are IsDone): failure > cancelled > skipped > success
+//  3. Active state: allWaiting > allBlocked > running
+//
+// Key semantics:
+//   - "All done" is based on IsDone(), which includes Success/Failure/Cancelled/Skipped.
+//   - Mixed success+skipped returns success (both are terminal and no failure/cancelled).
+//   - Blocked is only returned when ALL jobs are blocked; otherwise falls back to running.
 func aggregateJobStatus(jobs []*ActionRunJob) Status {
+	if len(jobs) == 0 {
+		return StatusRunning
+	}
+
 	allDone := true
 	allWaiting := true
+	allSkipped := true
 	hasFailure := false
+	hasCancelled := false
+	allBlocked := true
+
 	for _, job := range jobs {
 		if !job.Status.IsDone() {
 			allDone = false
@@ -163,18 +182,41 @@ func aggregateJobStatus(jobs []*ActionRunJob) Status {
 		if job.Status != StatusWaiting && !job.Status.IsDone() {
 			allWaiting = false
 		}
-		if job.Status == StatusFailure || job.Status == StatusCancelled {
+		if job.Status != StatusSkipped {
+			allSkipped = false
+		}
+		if job.Status != StatusBlocked {
+			allBlocked = false
+		}
+		switch job.Status {
+		case StatusFailure:
 			hasFailure = true
+		case StatusCancelled:
+			hasCancelled = true
 		}
 	}
+
+	// Terminal state: all jobs have finished
 	if allDone {
 		if hasFailure {
 			return StatusFailure
 		}
+		if hasCancelled {
+			return StatusCancelled
+		}
+		if allSkipped {
+			return StatusSkipped
+		}
 		return StatusSuccess
 	}
+
+	// Active state evaluation
 	if allWaiting {
 		return StatusWaiting
 	}
+	if allBlocked && !hasFailure && !hasCancelled {
+		return StatusBlocked
+	}
+
 	return StatusRunning
 }
